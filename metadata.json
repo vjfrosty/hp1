@@ -1,0 +1,6 @@
+{
+  "name": "АЙДЕ ПО ЕДНА!",
+  "description": "Социална PWA платформа за организиране на мъжки сбирки, мезе и приятелска компания в България.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
