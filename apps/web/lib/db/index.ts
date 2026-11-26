@@ -1,0 +1,28 @@
+import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
+import type { NeonHttpDatabase } from "drizzle-orm/neon-http";
+
+import * as schema from "./schema";
+
+// Lazy singleton (RouteCrafted pattern): evaluated on first request, not at
+// build time, so `next build` and CI run without DATABASE_URL.
+let _db: NeonHttpDatabase<typeof schema> | null = null;
+
+function getDb(): NeonHttpDatabase<typeof schema> {
+  if (!_db) {
+    const url = process.env.DATABASE_URL;
+    if (!url) throw new Error("DATABASE_URL environment variable is not set");
+    _db = drizzle(neon(url), { schema });
+  }
+  return _db;
+}
+
+export const db = new Proxy({} as NeonHttpDatabase<typeof schema>, {
+  get(_target, prop) {
+    return (getDb() as unknown as Record<string | symbol, unknown>)[prop];
+  },
+});
+
+export function isDatabaseConfigured(): boolean {
+  return Boolean(process.env.DATABASE_URL);
+}

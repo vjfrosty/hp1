@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # No secrets needed: the DB client is lazy, Clerk is optional at build time,
+    # and unit tests don't touch the network.
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck
+        run: npx turbo typecheck
+
+      - name: Lint
+        run: npx turbo lint
+
+      - name: Unit tests
+        run: npx turbo test
+
+      - name: Build
+        run: npx turbo build --filter=web
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'

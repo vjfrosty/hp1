@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-display: var(--font-playfair), Georgia, serif;
+  --font-sans: var(--font-manrope), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, monospace;
+
+  --color-canvas: #F7F3EC;
+  --color-surface: #FDFBF7;
+  --color-surface-muted: #EFE8DC;
+  --color-ink: #1E1915;
+  --color-ink-muted: #5D5348;
+  --color-line: #DDD3C2;
+  --color-tavern: #1C4532;
+  --color-tavern-hover: #153526;
+  --color-burgundy: #7C232B;
+  --color-burgundy-hover: #621B21;
+  --color-brass: #A6762C;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    scroll-behavior: smooth;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+/* Authentic subtle tilted ink rubber stamp for earned verdicts (КВОРУМ / ОДОБРЕНО) */
+.tavern-stamp {
+  font-family: var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border: 2px solid currentColor;
+  padding: 0.15rem 0.55rem;
+  border-radius: 3px;
+  transform: rotate(-3deg);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  font-size: 0.6875rem;
+  line-height: 1.1;
+}
+
+/* Safe area padding for iOS bottom bar */
+.pb-safe {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+
+/* Leaflet map warm tavern styling */
+.leaflet-container {
+  font-family: var(--font-sans) !important;
+  background-color: #EAE3D5 !important;
+  z-index: 10;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 12px !important;
+  background: #FDFBF7 !important;
+  color: #1E1915 !important;
+  box-shadow: 0 10px 28px rgba(30, 25, 21, 0.14) !important;
+  border: 1px solid #DDD3C2;
+}
+
+.leaflet-popup-tip {
+  background: #FDFBF7 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

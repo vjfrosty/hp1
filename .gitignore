@@ -6,3 +6,8 @@ coverage/
 *.log
 .env*
 !.env.example
+.next/
+.turbo/
+.vercel
+next-env.d.ts
+*.tsbuildinfo
