@@ -1,5 +1,6 @@
 import "server-only";
 
+import { clerkClient } from "@clerk/nextjs/server";
 import { eq, sql } from "drizzle-orm";
 
 import { db } from "./index";
@@ -16,12 +17,30 @@ export async function getOrCreateUser(clerkUserId: string): Promise<UserRow> {
   const existing = await db.select().from(users).where(eq(users.clerkUserId, clerkUserId)).limit(1);
   if (existing[0]) return existing[0];
 
+  // First sight: copy the display name from Clerk so the row is usable even
+  // before the webhook arrives. A Clerk outage must not block sign-in.
+  const profile = await clerkProfile(clerkUserId).catch(() => ({ nickname: "", avatarUrl: null }));
   const inserted = await db
     .insert(users)
-    .values({ clerkUserId })
+    .values({ clerkUserId, ...profile, avatarInitials: initialsOf(profile.nickname) })
     .onConflictDoUpdate({ target: users.clerkUserId, set: { updatedAt: sql`now()` } })
     .returning();
   return inserted[0];
+}
+
+async function clerkProfile(clerkUserId: string): Promise<{ nickname: string; avatarUrl: string | null }> {
+  const u = await (await clerkClient()).users.getUser(clerkUserId);
+  const nickname = u.username || [u.firstName, u.lastName].filter(Boolean).join(" ") || "Гост";
+  return { nickname, avatarUrl: u.imageUrl || null };
+}
+
+function initialsOf(nickname: string): string {
+  return nickname
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
 }
 
 export async function confirmAge(userId: string): Promise<UserRow> {
@@ -38,12 +57,7 @@ export async function syncFromClerk(
   clerkUserId: string,
   profile: { nickname: string; avatarUrl: string | null },
 ): Promise<void> {
-  const initials = profile.nickname
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
+  const initials = initialsOf(profile.nickname);
   await db
     .insert(users)
     .values({ clerkUserId, nickname: profile.nickname, avatarUrl: profile.avatarUrl, avatarInitials: initials })
