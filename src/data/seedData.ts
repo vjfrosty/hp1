@@ -9,10 +9,10 @@ import {
 
 // Exact generated image paths from Phase 1
 export const IMAGES = {
-  heroMehana: '/src/assets/images/hero_mehana_table_1795110175071.jpg',
-  bbqYard: '/src/assets/images/gathering_bbq_yard_1795110176773.jpg',
-  villaFire: '/src/assets/images/gathering_villa_fire_1795110106084.jpg',
-  homeTable: '/src/assets/images/gathering_home_table_1795110089598.jpg',
+  heroMehana: '/images/hero_mehana_table_1795110175071.jpg',
+  bbqYard: '/images/gathering_bbq_yard_1795110176773.jpg',
+  villaFire: '/images/gathering_villa_fire_1795110106084.jpg',
+  homeTable: '/images/gathering_home_table_1795110089598.jpg',
 };
 
 export const INITIAL_USER_PROFILE: UserProfile = {
