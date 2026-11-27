@@ -16,7 +16,7 @@ export function CreateChronicleForm({ onDone }: { onDone: () => void }) {
   const create = useCreateChronicle();
   const profile = useProfile();
   const groups = useGroups();
-  const events = useEvents({ scope: "mine" });
+  const events = useEvents({ scope: "attended" });
   const me = profile.data?.id;
 
   // Only events the server accepts: organised by me or confirmed attendance.

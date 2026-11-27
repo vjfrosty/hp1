@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, count, eq, exists, gte, inArray, isNull, ne, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, exists, gte, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
 import type { EventScope, PublicEvent, RSVPStatus, UserSummary } from "@hp1/shared";
 
 import { db } from "@/lib/db";
@@ -21,6 +21,8 @@ export const EVENT_WRITE_LIMITS = {
 
 /** Events stay listed until 6 hours after they start. */
 const LISTED_AFTER_START_MS = 6 * 3600 * 1000;
+/** How far back the `attended` scope looks. */
+const ATTENDED_WINDOW_MS = 180 * 86_400_000;
 const LIST_LIMIT = 100;
 
 const attendeeColumns = {
@@ -98,6 +100,34 @@ export async function listEvents(viewerId: string, opts: { city?: string; scope:
       .from(groupMembers)
       .where(and(eq(groupMembers.groupId, events.groupId), eq(groupMembers.userId, viewerId))),
   );
+
+  if (opts.scope === "attended") {
+    // Same "attended" rule the chronicle API enforces: organiser or confirmed.
+    const confirmed = exists(
+      db
+        .select({ one: sql`1` })
+        .from(eventAttendees)
+        .where(
+          and(eq(eventAttendees.eventId, events.id), eq(eventAttendees.userId, viewerId), eq(eventAttendees.status, "confirmed")),
+        ),
+    );
+    const past = await db
+      .select()
+      .from(events)
+      .where(
+        and(
+          lte(events.startsAt, new Date()),
+          gte(events.startsAt, new Date(Date.now() - ATTENDED_WINDOW_MS)),
+          isNull(events.cancelledAt),
+          opts.city ? eq(events.city, opts.city) : undefined,
+          notBlockedBy(viewerId, events.organizerId),
+          or(eq(events.organizerId, viewerId), confirmed),
+        ),
+      )
+      .orderBy(desc(events.startsAt))
+      .limit(LIST_LIMIT);
+    return serializeEvents(past, viewerId);
+  }
 
   // Same rule as canViewEvent(), minus invite links (never listed).
   const visible =

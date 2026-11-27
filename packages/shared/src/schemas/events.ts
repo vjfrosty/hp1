@@ -84,7 +84,8 @@ export const decideAttendeeSchema = z.object({
 });
 export type DecideAttendeeInput = z.infer<typeof decideAttendeeSchema>;
 
-export const eventScopes = ['feed', 'radar', 'mine'] as const;
+/** `attended`: past events the viewer organised or confirmed (chronicle picker), newest first. */
+export const eventScopes = ['feed', 'radar', 'mine', 'attended'] as const;
 export type EventScope = (typeof eventScopes)[number];
 
 /** GET /api/events query string. */
