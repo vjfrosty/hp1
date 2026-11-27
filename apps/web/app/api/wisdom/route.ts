@@ -8,6 +8,7 @@ import { limitWrite } from "@/lib/community/limits";
 import { loadWisdom } from "@/lib/community/wisdom";
 import { db } from "@/lib/db";
 import { users, wisdom } from "@/lib/db/schema";
+import { notify } from "@/lib/notifications/notify";
 import { blockedUserIds } from "@/lib/social/blocks";
 
 /**
@@ -49,6 +50,9 @@ export async function POST(req: Request) {
     if (found.length === 0) return badRequest("quotedUserId: unknown user");
   }
 
+  // Consent belongs to the quoted person, never the author: a quote about
+  // someone else starts unconsented and they are asked (POST /api/wisdom/[id]/consent).
+  const quotesSomeoneElse = Boolean(w.quotedUserId) && w.quotedUserId !== me.id;
   const [row] = await db
     .insert(wisdom)
     .values({
@@ -56,11 +60,19 @@ export async function POST(req: Request) {
       quote: w.quote,
       context: w.context || "От последната маса",
       quotedUserId: w.quotedUserId ?? null,
-      consentGiven: w.consentGiven,
+      consentGiven: quotesSomeoneElse ? false : w.consentGiven,
       sharedToGroup: w.sharedToGroup,
       groupId: w.groupId ?? null,
     })
     .returning({ id: wisdom.id });
+
+  if (quotesSomeoneElse && w.quotedUserId) {
+    await notify([w.quotedUserId], {
+      type: "invite",
+      title: "Цитираха те в „Мъдрост от масата“",
+      body: `${me.nickname || "Участник"} записа твоя мисъл: „${w.quote.slice(0, 80)}“. Одобри или я премахни.`,
+    });
+  }
 
   const [dto] = await loadWisdom(me.id, { id: row.id });
   return privateJson(dto ?? null, { status: 201 });

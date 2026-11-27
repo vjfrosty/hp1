@@ -113,12 +113,13 @@ test("chronicle rejects non-https photos and group visibility without a group", 
   assert.equal(createChronicleSchema.safeParse({ ...chronicle, visibility: "group" }).success, false);
 });
 
-test("quoting someone needs consentGiven; sharing needs a group", () => {
+test("quoting someone is allowed without author-asserted consent; sharing needs a group", () => {
   const q = { quote: "Мезето е по-важно от ракията." };
   assert.equal(createWisdomSchema.safeParse(q).success, true);
   const quoted = { ...q, quotedUserId: "00000000-0000-4000-8000-000000000001" };
-  assert.equal(createWisdomSchema.safeParse(quoted).success, false);
-  assert.equal(createWisdomSchema.safeParse({ ...quoted, consentGiven: true }).success, true);
+  // Consent comes from the quoted person via /api/wisdom/[id]/consent, so the
+  // author's request no longer needs (or can grant) it.
+  assert.equal(createWisdomSchema.safeParse(quoted).success, true);
   assert.equal(createWisdomSchema.safeParse({ ...q, sharedToGroup: true }).success, false);
   assert.equal(createWisdomSchema.safeParse({ ...q, quote: "x".repeat(281) }).success, false);
 });

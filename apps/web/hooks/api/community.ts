@@ -11,6 +11,7 @@
  *   ['groups', 'detail', id]        useGroup(id)         GET /api/groups/[id]
  *   ['chronicles']                  useChronicles        GET /api/chronicles
  *   ['wisdom']                      useWisdom            GET /api/wisdom
+ *                                   useWisdomConsent     POST /api/wisdom/[id]/consent
  *   ['notifications']               useNotifications     GET /api/notifications
  * ['me'] (AgeGate, GET /api/me) is invalidated after a profile update.
  */
@@ -26,6 +27,7 @@ import type {
   ProfileDTO,
   ProfilePatchInput,
   TagConsentResult,
+  WisdomConsentResult,
   WisdomDTO,
 } from "@hp1/shared";
 import { useMutation, useQuery, useQueryClient, type QueryClient, type QueryKey } from "@tanstack/react-query";
@@ -210,6 +212,18 @@ export function useTagConsent() {
 
 export function useWisdom() {
   return useQuery({ queryKey: communityKeys.wisdom, queryFn: () => getJson<WisdomDTO[]>("/api/wisdom") });
+}
+
+/** The quoted person accepts (`accept: true`) or removes a quote about them. */
+export function useWisdomConsent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ wisdomId, accept }: { wisdomId: string; accept: boolean }) =>
+      sendJson<WisdomConsentResult>(`/api/wisdom/${wisdomId}/consent`, "POST", { accept }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: communityKeys.wisdom });
+    },
+  });
 }
 
 export function useAddWisdom() {

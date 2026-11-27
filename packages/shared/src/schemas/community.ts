@@ -204,19 +204,26 @@ export const createWisdomSchema = z
     quote: z.string().trim().min(1).max(280),
     context: z.string().trim().max(140).default(''),
     quotedUserId: uuid.nullish(),
+    /**
+     * Ignored when quoting someone else: only the quoted person can consent,
+     * via POST /api/wisdom/[id]/consent. Kept for quotes with no quoted user.
+     */
     consentGiven: z.boolean().default(false),
     sharedToGroup: z.boolean().default(false),
     groupId: uuid.nullish(),
-  })
-  .refine((w) => !w.quotedUserId || w.consentGiven, {
-    message: 'Нужно е съгласието на цитирания човек.',
-    path: ['consentGiven'],
   })
   .refine((w) => !w.sharedToGroup || Boolean(w.groupId), {
     message: 'groupId is required when sharedToGroup is true',
     path: ['groupId'],
   });
 export type CreateWisdomInput = z.input<typeof createWisdomSchema>;
+
+/** POST /api/wisdom/[id]/consent — the quoted person accepts or removes the quote. */
+export const wisdomConsentSchema = z.object({ accept: z.boolean() });
+export type WisdomConsentInput = z.infer<typeof wisdomConsentSchema>;
+export interface WisdomConsentResult {
+  status: 'accepted' | 'removed';
+}
 
 export interface WisdomDTO {
   id: string;

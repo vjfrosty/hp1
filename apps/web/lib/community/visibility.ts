@@ -69,6 +69,8 @@ export interface WisdomViewContext {
   quotedUserId: string | null;
   sharedToGroup: boolean;
   groupId: string | null;
+  /** The quoted person approved the quote (only they can set this). */
+  consentGiven: boolean;
   /** Viewer is a member of wisdom.group_id. */
   isGroupMember: boolean;
   /** Viewer blocks / is blocked by the author or the quoted person. */
@@ -84,5 +86,8 @@ export function canViewWisdom(c: WisdomViewContext): boolean {
   if (c.blocked) return false;
   if (c.authorId !== null && c.authorId === c.viewerId) return true;
   if (c.quotedUserId !== null && c.quotedUserId === c.viewerId) return true;
+  // A quote about someone stays between author and quoted person until that
+  // person consents; only then may group members see it.
+  if (c.quotedUserId !== null && c.quotedUserId !== c.authorId && !c.consentGiven) return false;
   return c.sharedToGroup && c.groupId !== null && c.isGroupMember;
 }

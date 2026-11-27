@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { UserSummary, WisdomDTO } from "@hp1/shared";
-import { and, desc, eq, isNotNull, lt, or, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, lt, or, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import { db } from "@/lib/db";
@@ -30,7 +30,13 @@ function visibleTo(viewerId: string): SQL {
     or(
       eq(wisdom.authorId, viewerId),
       eq(wisdom.quotedUserId, viewerId),
-      and(eq(wisdom.sharedToGroup, true), isNotNull(wisdom.groupId), viewerIsMemberOf(viewerId, wisdom.groupId)),
+      and(
+        eq(wisdom.sharedToGroup, true),
+        isNotNull(wisdom.groupId),
+        viewerIsMemberOf(viewerId, wisdom.groupId),
+        // Quotes about someone else need that person's own consent first.
+        or(isNull(wisdom.quotedUserId), eq(wisdom.quotedUserId, wisdom.authorId), eq(wisdom.consentGiven, true)),
+      ),
     ),
   )!;
 }
@@ -76,6 +82,7 @@ export async function loadWisdom(
         quotedUserId: w.quotedUserId,
         sharedToGroup: w.sharedToGroup,
         groupId: w.groupId,
+        consentGiven: w.consentGiven,
         isGroupMember: Boolean(w.isGroupMember),
         blocked: false, // filtered in SQL by notBlockedBy
       }),

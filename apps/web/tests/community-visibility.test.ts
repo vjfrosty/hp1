@@ -102,6 +102,7 @@ test("wisdom: author, quoted person, or members of the group it was shared to", 
     quotedUserId: null,
     sharedToGroup: false,
     groupId: "g",
+    consentGiven: false,
     isGroupMember: true,
     blocked: false,
   };
@@ -112,4 +113,10 @@ test("wisdom: author, quoted person, or members of the group it was shared to", 
   assert.equal(canViewWisdom({ ...w, sharedToGroup: true, groupId: null }), false);
   assert.equal(canViewWisdom({ ...w, quotedUserId: "v" }), true);
   assert.equal(canViewWisdom({ ...w, sharedToGroup: true, blocked: true }), false);
+  // A quote about "q" is hidden from the group until q consents; q and the author always see it.
+  const aboutQ = { ...w, quotedUserId: "q", sharedToGroup: true };
+  assert.equal(canViewWisdom(aboutQ), false, "group must not see an unconsented quote");
+  assert.equal(canViewWisdom({ ...aboutQ, consentGiven: true }), true);
+  assert.equal(canViewWisdom({ ...aboutQ, viewerId: "q" }), true);
+  assert.equal(canViewWisdom({ ...aboutQ, viewerId: "a" }), true);
 });
