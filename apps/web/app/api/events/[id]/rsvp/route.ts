@@ -4,6 +4,7 @@ import { badRequest, conflict, notFound, parseBody, privateJson, uuidParam } fro
 import { requireAdultUser } from "@/lib/auth/current-user";
 import { canRsvp } from "@/lib/events/access";
 import { isInviteCodeShape } from "@/lib/events/invite";
+import { limitInviteLookup } from "@/lib/events/invite-limit";
 import { getEventAccess, serializeEvent } from "@/lib/events/load";
 import { nextRsvpStatus, rsvpSystemText, shouldNotifyOrganizer } from "@/lib/events/rules";
 import { EVENT_WRITE_LIMITS, storeRsvp } from "@/lib/events/service";
@@ -30,6 +31,11 @@ export async function POST(req: Request, ctx: Ctx) {
   if (!body.ok) return body.response;
   const input = body.data;
 
+  if (input.inviteCode !== undefined) {
+    // Same per-IP/per-user limit as GET /api/events/[id]?invite= (AGENTS.md rule 9).
+    const limited = await limitInviteLookup(req, user.id);
+    if (limited) return limited;
+  }
   const inviteCode = input.inviteCode && isInviteCodeShape(input.inviteCode) ? input.inviteCode : undefined;
   const access = await getEventAccess(id, user.id, { inviteCode });
   if (!access) return notFound("Сбирката не е намерена");

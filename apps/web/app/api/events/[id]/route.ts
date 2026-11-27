@@ -6,11 +6,12 @@ import { requireUser } from "@/lib/auth/current-user";
 import { events } from "@/lib/db/schema";
 import { withTransaction } from "@/lib/db/tx";
 import { isInviteCodeShape } from "@/lib/events/invite";
+import { limitInviteLookup } from "@/lib/events/invite-limit";
 import { getEventAccess, serializeEvent } from "@/lib/events/load";
 import { describeEventChange } from "@/lib/events/rules";
 import { EVENT_WRITE_LIMITS, activeAttendeeIds, systemMessage } from "@/lib/events/service";
 import { notify } from "@/lib/notifications/notify";
-import { LIMITS, clientIp, rateLimit, tooManyRequests } from "@/lib/rate-limit";
+import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -23,9 +24,9 @@ export async function GET(req: Request, ctx: Ctx) {
 
   const invite = new URL(req.url).searchParams.get("invite") ?? undefined;
   if (invite !== undefined) {
-    // Invite lookups are rate-limited per IP (AGENTS.md rule 9).
-    const limit = await rateLimit(`invite:${clientIp(req)}`, LIMITS.inviteLookup);
-    if (!limit.ok) return tooManyRequests(limit.retryAfter);
+    // Invite lookups are rate-limited per IP and per user (AGENTS.md rule 9).
+    const limited = await limitInviteLookup(req, auth.user.id);
+    if (limited) return limited;
   }
   const inviteCode = invite && isInviteCodeShape(invite) ? invite : undefined;
 
